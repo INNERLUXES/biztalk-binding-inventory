@@ -1,0 +1,5 @@
+{
+  "name": "Quillmoor migration review",
+  "adapterTargets": { "WCF-NetTcp": "API Management + Azure Functions (the service moves to HTTP)" },
+  "weights": { "orchestration": 6 }
+}

@@ -1,0 +1,256 @@
+biztalk-binding-inventory: examples/messy/Quillmoor.Orders.BindingInfo.xml
+input: 1 binding file from 1 folder (examples/messy): 1 read (1 UTF-8), 0 not read
+config: examples/config.json (Quillmoor migration review): 23 adapters with a target (1 from the configuration); minimum severity info; fail on error
+rules: unmapped-adapter (warning); custom-pipeline (warning); orchestration (info); orphan-send-port (warning); disabled-receive-location (info); duplicate-address (error); plain-text-credential (error); dynamic-send-port (warning); invalid-artifact (error); unreadable-file (error); unparsable-file (error)
+artifacts: 14 in 1 application: 4 receive locations, 8 send ports, 1 orchestration, 1 party; complexity 56 (7 low, 6 medium, 1 high)
+findings: 10 (3 error, 5 warning, 2 info)
+
+Applications (1)
+
+  application       receive locations  send ports  orchestrations  complexity
+  Quillmoor.Orders  4                  8           1               51
+
+Adapters (8)
+
+  adapter          artifacts  suggested target
+  FILE             4          Logic Apps File System connector or Azure Blob Storage
+  FTP              2          Logic Apps SFTP connector (or the FTP connector while the partner stays on FTP)
+  (dynamic)        1          Logic Apps Standard workflow that picks the connector (the adapter is chosen at run time)
+  HTTP             1          API Management + Logic Apps or Azure Functions
+  Quillmoor.Telex  1          no mapped target
+  WCF-BasicHttp    1          API Management + Logic Apps or Azure Functions
+  WCF-NetTcp       1          API Management + Azure Functions (the service moves to HTTP)
+  WCF-SQL          1          Logic Apps SQL Server connector
+
+Targets (11)
+
+  suggested target                                                                           artifacts
+  Logic Apps File System connector or Azure Blob Storage                                     4
+  API Management + Logic Apps or Azure Functions                                             2
+  Azure Functions (custom pipeline code)                                                     2
+  Logic Apps SFTP connector (or the FTP connector while the partner stays on FTP)            2
+  API Management + Azure Functions (the service moves to HTTP)                               1
+  Logic Apps SQL Server connector                                                            1
+  Logic Apps Standard workflow                                                               1
+  Logic Apps Standard workflow that picks the connector (the adapter is chosen at run time)  1
+  Logic Apps integration account B2B (AS2, X12, EDIFACT)                                     1
+  Logic Apps integration account B2B (trading partner and agreements)                        1
+  no mapped target                                                                           1
+
+Artifacts (14)
+
+  orchestration  Quillmoor.Orders.Processes.ApproveOrder (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:10
+           host: QuillmoorProcessing
+           ports: ReceiveOrder -> receive port RP_OrderIn; WriteToWarehouse -> send port SP_WarehouseSql; SendStatus -> send port SP_DynamicStatus
+           target: Logic Apps Standard workflow
+           complexity: 9 (high: orchestration 6, orchestrationPort 1 x 3)
+           findings: info orchestration
+
+  send-port  SP_WarehouseSql (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:30
+           adapter: WCF-SQL
+           address: mssql://wh-db01.quillmoor.test//Warehouse?
+           pipelines: send Microsoft.BizTalk.DefaultPipelines.XMLTransmit
+           maps: Quillmoor.Orders.Maps.OrderToWarehouse
+           filter: none
+           target: Logic Apps SQL Server connector
+           complexity: 2 (low: sendPort 1, map 1)
+           findings: error plain-text-credential
+
+  send-port  SP_ArchiveFile (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:54
+           adapter: FILE
+           address: C:\Quillmoor\Archive\%MessageID%.zip
+           pipelines: send Quillmoor.Orders.Pipelines.ZipTransmit (custom)
+           filter: BTS.ReceivePortName == RP_OrderIn
+           target: Logic Apps File System connector or Azure Blob Storage + Azure Functions (custom pipeline code)
+           complexity: 5 (medium: sendPort 1, customPipeline 3, filterStatement 1)
+           findings: warning custom-pipeline
+
+  send-port  SP_PartnerFtp (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:69
+           adapter: FTP
+           address: ftp://qm_orders:****@ftp.ridgeback.test/inbound/
+           pipelines: send Microsoft.BizTalk.DefaultPipelines.PassThruTransmit
+           maps: Quillmoor.Orders.Maps.ShipNoticeToRidgeback
+           filter: BTS.MessageType == urn:quillmoor:orders#ShipNotice AND Quillmoor.Orders.Partner == RIDGEBACK
+           target: Logic Apps SFTP connector (or the FTP connector while the partner stays on FTP)
+           complexity: 4 (medium: sendPort 1, map 1, filterStatement 1 x 2)
+           findings: error plain-text-credential
+
+  send-port  SP_LegacyAudit (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:86
+           adapter: FILE
+           address: \\qm-audit01\audit\orders\%MessageID%.xml
+           pipelines: send Microsoft.BizTalk.DefaultPipelines.PassThruTransmit
+           filter: none
+           target: Logic Apps File System connector or Azure Blob Storage
+           complexity: 1 (low: sendPort 1)
+           findings: warning orphan-send-port
+
+  send-port  SP_DynamicStatus (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:100
+           adapter: dynamic (set at run time)
+           pipelines: send Microsoft.BizTalk.DefaultPipelines.XMLTransmit
+           filter: none
+           target: Logic Apps Standard workflow that picks the connector (the adapter is chosen at run time)
+           complexity: 3 (low: sendPort 1, dynamicSendPort 2)
+           findings: warning dynamic-send-port
+
+  send-port  SP_Telex (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:107
+           adapter: Quillmoor.Telex
+           address: telex://qm-telex01/line4
+           pipelines: send Microsoft.BizTalk.DefaultPipelines.PassThruTransmit
+           filter: BTS.MessageType == urn:quillmoor:orders#Recall
+           target: no mapped target
+           complexity: 5 (medium: sendPort 1, unmappedAdapter 3, filterStatement 1)
+           findings: warning unmapped-adapter
+
+  send-port  SP_StockService (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:121
+           adapter: WCF-NetTcp
+           address: net.tcp://stock.quillmoor.test:8808/StockService
+           two-way: yes
+           pipelines: send Microsoft.BizTalk.DefaultPipelines.XMLTransmit; receive Microsoft.BizTalk.DefaultPipelines.XMLReceive
+           filter: BTS.MessageType == urn:quillmoor:orders#StockQuery
+           target: API Management + Azure Functions (the service moves to HTTP)
+           complexity: 3 (low: sendPort 1, filterStatement 1, twoWay 1)
+           findings: none
+
+  send-port  SP_RidgebackAs2 (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:137
+           adapter: HTTP
+           address: https://as2.ridgeback.test/receive
+           pipelines: send Microsoft.BizTalk.Edi.DefaultPipelines.AS2EdiSend
+           filter: EDI.DestinationPartyName == Ridgeback Supplies
+           target: API Management + Logic Apps or Azure Functions + Logic Apps integration account B2B (AS2, X12, EDIFACT)
+           complexity: 5 (medium: sendPort 1, filterStatement 1, b2b 3)
+           findings: none
+
+  receive-location  RL_Orders_File (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:157
+           adapter: FILE
+           address: C:\Quillmoor\Drop\Orders\*.csv
+           receive port: RP_OrderIn
+           enabled: yes
+           pipelines: receive Quillmoor.Orders.Pipelines.FlatFileReceive (custom; custom component Quillmoor.Components.HeaderStripper)
+           maps: Quillmoor.Orders.Maps.FlatOrderToOrder
+           target: Logic Apps File System connector or Azure Blob Storage + Azure Functions (custom pipeline code)
+           complexity: 7 (medium: receiveLocation 1, customPipeline 3, customComponent 2, map 1)
+           findings: warning custom-pipeline
+
+  receive-location  RL_Orders_File_Old (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:170
+           adapter: FILE
+           address: C:\Quillmoor\Drop\Orders\*.csv
+           receive port: RP_OrderIn
+           enabled: no
+           pipelines: receive Microsoft.BizTalk.DefaultPipelines.PassThruReceive
+           maps: Quillmoor.Orders.Maps.FlatOrderToOrder
+           target: Logic Apps File System connector or Azure Blob Storage
+           complexity: 2 (low: receiveLocation 1, map 1)
+           findings: error duplicate-address, info disabled-receive-location
+
+  receive-location  RL_Orders_Ftp (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:181
+           adapter: FTP
+           address: ftp://ftp.ridgeback.test/outbound/*.xml
+           receive port: RP_OrderIn
+           enabled: yes
+           pipelines: receive Microsoft.BizTalk.DefaultPipelines.XMLReceive
+           maps: Quillmoor.Orders.Maps.FlatOrderToOrder
+           target: Logic Apps SFTP connector (or the FTP connector while the partner stays on FTP)
+           complexity: 2 (low: receiveLocation 1, map 1)
+           findings: none
+
+  receive-location  RL_OrderApi_Soap (Quillmoor.Orders)  examples/messy/Quillmoor.Orders.BindingInfo.xml:202
+           adapter: WCF-BasicHttp
+           address: /Quillmoor.Orders/OrderService.svc
+           receive port: RP_OrderApi
+           enabled: yes
+           two-way: yes
+           pipelines: receive Microsoft.BizTalk.DefaultPipelines.XMLReceive; send Microsoft.BizTalk.DefaultPipelines.PassThruTransmit
+           maps: Quillmoor.Orders.Maps.ApiOrderToOrder
+           target: API Management + Logic Apps or Azure Functions
+           complexity: 3 (low: receiveLocation 1, map 1, twoWay 1)
+           findings: none
+
+  party  Ridgeback Supplies  examples/messy/Quillmoor.Orders.BindingInfo.xml:222
+           send ports: SP_RidgebackAs2
+           target: Logic Apps integration account B2B (trading partner and agreements)
+           complexity: 5 (medium: party 2, b2b 3)
+           findings: none
+
+Findings (10)
+
+  ERROR    plain-text-credential      examples/messy/Quillmoor.Orders.BindingInfo.xml:36
+           the send port "SP_WarehouseSql" holds a value for Password in plain text, in its TransportTypeData; the value is shown here as ****
+           fix: take the value out of the binding file, rotate it, and keep it in Azure Key Vault or behind a managed identity in the target
+           rule: a value in a setting named like a password, secret, key or token, a password in an address, or a secret in a connection string
+           basis: BizTalk Server takes the passwords out of a binding file when it exports one, so they must be set again after an import, and the file may still hold sensitive data that must be kept safe (Exporting Bindings (Microsoft Learn, BizTalk Server), https://learn.microsoft.com/en-us/biztalk/core/exporting-bindings6)
+           the tool's own choice: an element or attribute whose name is that of a secret (docs/method.md) with a value, in the binding file or in the transport, pipeline or filter settings inside it, and the password of an address or the secret part of a connection string; the value is never shown, and the tool cannot tell whether it is still valid
+
+  ERROR    plain-text-credential      examples/messy/Quillmoor.Orders.BindingInfo.xml:73
+           the send port "SP_PartnerFtp" holds the password in the user information of an address in plain text, in its Address; the value is shown here as ****
+           fix: take the value out of the binding file, rotate it, and keep it in Azure Key Vault or behind a managed identity in the target
+           rule: a value in a setting named like a password, secret, key or token, a password in an address, or a secret in a connection string
+           basis: BizTalk Server takes the passwords out of a binding file when it exports one, so they must be set again after an import, and the file may still hold sensitive data that must be kept safe (Exporting Bindings (Microsoft Learn, BizTalk Server), https://learn.microsoft.com/en-us/biztalk/core/exporting-bindings6)
+           the tool's own choice: an element or attribute whose name is that of a secret (docs/method.md) with a value, in the binding file or in the transport, pipeline or filter settings inside it, and the password of an address or the secret part of a connection string; the value is never shown, and the tool cannot tell whether it is still valid
+
+  ERROR    duplicate-address          examples/messy/Quillmoor.Orders.BindingInfo.xml:170
+           the receive location "RL_Orders_File_Old" uses the same FILE address (C:\Quillmoor\Drop\Orders\*.csv) as the receive location "RL_Orders_File" at examples/messy/Quillmoor.Orders.BindingInfo.xml:157
+           fix: give each receive location and send port its own address, or keep one of them
+           rule: a receive location or send port with the adapter and address of an earlier one of the same kind
+           basis: an adapter sends messages out of BizTalk Server or receives them into it over one transport, and each receive location listens on one transport at one address (Adapters in BizTalk Server (Microsoft Learn), https://learn.microsoft.com/en-us/biztalk/core/adapters-in-biztalk-server)
+           the tool's own choice: addresses are compared with the adapter, trimmed, with the letters A to Z lowered, back slashes read as forward slashes and a trailing slash left out; receive locations are compared with receive locations and send ports with send ports, across all the files of a run; an empty address is not compared
+
+  WARNING  custom-pipeline            examples/messy/Quillmoor.Orders.BindingInfo.xml:54
+           the send port "SP_ArchiveFile" uses the custom send pipeline Quillmoor.Orders.Pipelines.ZipTransmit, which is code to rewrite
+           fix: rewrite the custom pipeline code as an Azure Function, a .NET local function or a workflow action, or replace it with a built-in operation such as Flat File or XML
+           rule: a receive location or send port with a pipeline, or a pipeline component in its pipeline settings, that does not come with BizTalk Server
+           basis: pipelines and helper code move to workflow actions, .NET local functions, inline code, custom connectors or external services such as Azure Functions (Why Move from BizTalk Server to Azure Logic Apps Standard? (Microsoft Learn), https://learn.microsoft.com/en-us/azure/logic-apps/biztalk-server-migration-overview)
+           the tool's own choice: a pipeline or a component named in the per-instance pipeline settings whose type name starts with none of the built-in prefixes of src/targets.js and builtInPrefixes is custom code; the binding file names the components only when the pipeline settings were changed for the port, so a custom pipeline is reported even when its components are not listed
+
+  WARNING  orphan-send-port           examples/messy/Quillmoor.Orders.BindingInfo.xml:86
+           the send port "SP_LegacyAudit" has no filter, no orchestration port names it and it is in no send port group with a filter, so it receives no message
+           fix: remove the send port if it is not used, or name the subscription it serves so the move can route it, such as a Service Bus subscription
+           rule: a send port with no filter, named by no orchestration port and in no send port group with a filter
+           basis: a binding ties a logical endpoint, such as an orchestration port, to a physical one, such as a send port, a receive port or a party (Binding Files and Application Deployment (Microsoft Learn, BizTalk Server), https://learn.microsoft.com/en-us/biztalk/core/binding-files-and-application-deployment)
+           basis: routing through the MessageBox is redesigned with a broker such as Service Bus topics and subscriptions, not rebuilt inside a workflow (Why Move from BizTalk Server to Azure Logic Apps Standard? (Microsoft Learn), https://learn.microsoft.com/en-us/azure/logic-apps/biztalk-server-migration-overview)
+           the tool's own choice: a static or dynamic send port with no filter statement, that no orchestration port of the binding files names and that is in no send port group with a filter, receives no message; it may be bound in another application, so a warning
+
+  WARNING  dynamic-send-port          examples/messy/Quillmoor.Orders.BindingInfo.xml:100
+           the send port "SP_DynamicStatus" is dynamic: its adapter and address are set at run time, and the binding file names neither
+           fix: list the adapters and addresses the port is given at run time, from the orchestration or pipeline that sets them, and map each one
+           rule: a send port whose IsStatic is false
+           basis: adapters are replaced by built-in, managed or custom connectors and APIs, once the connector, its authentication, its throughput and its hosting are confirmed (Why Move from BizTalk Server to Azure Logic Apps Standard? (Microsoft Learn), https://learn.microsoft.com/en-us/azure/logic-apps/biztalk-server-migration-overview)
+           basis: a binding ties a logical endpoint, such as an orchestration port, to a physical one, such as a send port, a receive port or a party (Binding Files and Application Deployment (Microsoft Learn, BizTalk Server), https://learn.microsoft.com/en-us/biztalk/core/binding-files-and-application-deployment)
+           the tool's own choice: a send port whose IsStatic is false has its adapter and address set at run time by an orchestration or a pipeline, so neither is in the binding file
+
+  WARNING  unmapped-adapter           examples/messy/Quillmoor.Orders.BindingInfo.xml:107
+           the send port "SP_Telex" uses the adapter "Quillmoor.Telex", which has no mapped Azure target
+           fix: choose the Azure connector or service for the adapter and add it to adapterTargets in the configuration, or plan a custom connector
+           rule: a receive location or send port whose adapter (or backup adapter) is none of the 23 adapters with a target
+           basis: the native adapters are FILE, FTP, HTTP, MQSeries, MSMQ, POP3, SMTP, SOAP, Windows SharePoint Services and seven WCF adapters, and custom adapters are built with the BizTalk Adapter Framework (Adapters in BizTalk Server (Microsoft Learn), https://learn.microsoft.com/en-us/biztalk/core/adapters-in-biztalk-server)
+           basis: adapters are replaced by built-in, managed or custom connectors and APIs, once the connector, its authentication, its throughput and its hosting are confirmed (Why Move from BizTalk Server to Azure Logic Apps Standard? (Microsoft Learn), https://learn.microsoft.com/en-us/azure/logic-apps/biztalk-server-migration-overview)
+           basis: a Standard workflow has built-in connectors that run in the Logic Apps runtime, among them File System, FTP, SFTP, SMTP, SQL Server, IBM MQ, SAP, Service Bus, Blob Storage and Azure Functions (Built-In Connectors Overview, Azure Logic Apps (Microsoft Learn), https://learn.microsoft.com/en-us/azure/connectors/built-in)
+           basis: managed connectors are run by Microsoft in Azure, such as Office 365 Outlook, SharePoint and SFTP-SSH, with enterprise connectors for SAP and IBM MQ and a data gateway for systems on the premises (Managed Connectors Overview, Azure Logic Apps (Microsoft Learn), https://learn.microsoft.com/en-us/azure/connectors/managed)
+           the tool's own choice: the targets are the table of src/targets.js and the adapterTargets of the configuration; an adapter in neither, such as a custom adapter or WCF-Custom, whose binding decides what it does, is reported; the receive location or send port is still listed
+
+  WARNING  custom-pipeline            examples/messy/Quillmoor.Orders.BindingInfo.xml:157
+           the receive location "RL_Orders_File" uses the custom receive pipeline Quillmoor.Orders.Pipelines.FlatFileReceive and the custom component Quillmoor.Components.HeaderStripper in the settings of the receive pipeline, which is code to rewrite
+           fix: rewrite the custom pipeline code as an Azure Function, a .NET local function or a workflow action, or replace it with a built-in operation such as Flat File or XML
+           rule: a receive location or send port with a pipeline, or a pipeline component in its pipeline settings, that does not come with BizTalk Server
+           basis: pipelines and helper code move to workflow actions, .NET local functions, inline code, custom connectors or external services such as Azure Functions (Why Move from BizTalk Server to Azure Logic Apps Standard? (Microsoft Learn), https://learn.microsoft.com/en-us/azure/logic-apps/biztalk-server-migration-overview)
+           the tool's own choice: a pipeline or a component named in the per-instance pipeline settings whose type name starts with none of the built-in prefixes of src/targets.js and builtInPrefixes is custom code; the binding file names the components only when the pipeline settings were changed for the port, so a custom pipeline is reported even when its components are not listed
+
+  INFO     orchestration              examples/messy/Quillmoor.Orders.BindingInfo.xml:10
+           the orchestration "Quillmoor.Orders.Processes.ApproveOrder" (1 of 1 in Quillmoor.Orders) is bound to 3 ports; its logic is in the assembly, not in the binding file
+           fix: redesign the orchestration as a Logic Apps Standard workflow, and move its ports to triggers and actions
+           rule: every orchestration of the binding files
+           basis: orchestrations are refactored into stateful or stateless Logic Apps Standard workflows (Why Move from BizTalk Server to Azure Logic Apps Standard? (Microsoft Learn), https://learn.microsoft.com/en-us/azure/logic-apps/biztalk-server-migration-overview)
+           basis: Azure Logic Apps is named the successor of BizTalk Server, and Logic Apps Standard is the target for most BizTalk modernization work (Why Move from BizTalk Server to Azure Logic Apps Standard? (Microsoft Learn), https://learn.microsoft.com/en-us/azure/logic-apps/biztalk-server-migration-overview)
+           the tool's own choice: every orchestration is reported once, with the count of orchestrations of its application, because its logic is in the assembly and not in the binding file; info by default, because it is work to plan, not a fault
+
+  INFO     disabled-receive-location  examples/messy/Quillmoor.Orders.BindingInfo.xml:170
+           the receive location "RL_Orders_File_Old" is disabled
+           fix: decide whether the receive location is still needed; leave it out of the move if it is not
+           rule: a receive location whose Enable is false
+           basis: an adapter sends messages out of BizTalk Server or receives them into it over one transport, and each receive location listens on one transport at one address (Adapters in BizTalk Server (Microsoft Learn), https://learn.microsoft.com/en-us/biztalk/core/adapters-in-biztalk-server)
+           the tool's own choice: a receive location whose Enable is false receives nothing; info, because it may be kept on purpose
+
+note: examples/messy: 1 file whose name does not end in .xml was not read: "README.md"
+
+This inventory reads the binding files as they are written. It connects to no BizTalk group and no Azure service, and its targets are suggestions to review, not a migration plan and not a certification (docs/limits.md).
+
+RESULT: FAIL - 3 findings at or above error (3 error, 5 warning, 2 info)

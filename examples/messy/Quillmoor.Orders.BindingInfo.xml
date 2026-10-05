@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BindingInfo Assembly="Quillmoor.Orders.Processes, Version=1.4.0.0, Culture=neutral, PublicKeyToken=5a1f0c2e7b3d9e44" Version="3.5.1.0" BindingStatus="PartiallyBound" BoundEndpoints="11" TotalEndpoints="12">
+  <ModuleRefCollection>
+    <ModuleRef Name="[Application:Quillmoor.Orders]" Version="" Culture="" PublicKeyToken="" FullName="[Application:Quillmoor.Orders], Version=, Culture=, PublicKeyToken=">
+      <Services />
+      <TrackedSchemas />
+    </ModuleRef>
+    <ModuleRef Name="Quillmoor.Orders.Processes" Version="1.4.0.0" Culture="neutral" PublicKeyToken="5a1f0c2e7b3d9e44" FullName="Quillmoor.Orders.Processes, Version=1.4.0.0, Culture=neutral, PublicKeyToken=5a1f0c2e7b3d9e44">
+      <Services>
+        <Service Name="Quillmoor.Orders.Processes.ApproveOrder" State="Started" TrackingOption="ServiceStartEnd MessageSendReceive" Description="">
+          <Ports>
+            <Port Name="ReceiveOrder" Modifier="1" BindingOption="1">
+              <ReceivePortRef Name="RP_OrderIn" />
+            </Port>
+            <Port Name="WriteToWarehouse" Modifier="2" BindingOption="1">
+              <SendPortRef Name="SP_WarehouseSql" />
+            </Port>
+            <Port Name="SendStatus" Modifier="2" BindingOption="1">
+              <SendPortRef Name="SP_DynamicStatus" />
+            </Port>
+          </Ports>
+          <Roles />
+          <Host Name="QuillmoorProcessing" Type="1" Trusted="false" />
+        </Service>
+      </Services>
+      <TrackedSchemas />
+    </ModuleRef>
+  </ModuleRefCollection>
+  <SendPortCollection>
+    <SendPort Name="SP_WarehouseSql" IsStatic="true" IsTwoWay="false" BindingOption="1">
+      <Description />
+      <TransmitPipeline Name="Microsoft.BizTalk.DefaultPipelines.XMLTransmit" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.XMLTransmit, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="2" TrackingOption="None" Description="" />
+      <PrimaryTransport>
+        <Address>mssql://wh-db01.quillmoor.test//Warehouse?</Address>
+        <TransportType Name="WCF-SQL" Capabilities="907" />
+        <TransportTypeData>&lt;CustomProps&gt;&lt;BindingType vt="8"&gt;sqlBinding&lt;/BindingType&gt;&lt;UserName vt="8"&gt;qm_writer&lt;/UserName&gt;&lt;Password vt="8"&gt;plain-text-demo&lt;/Password&gt;&lt;StaticAction vt="8"&gt;TypedProcedure/dbo/AddOrder&lt;/StaticAction&gt;&lt;/CustomProps&gt;</TransportTypeData>
+        <RetryCount>3</RetryCount>
+        <RetryInterval>5</RetryInterval>
+        <SendHandler Name="QuillmoorSend" HostTrusted="false">
+          <TransportType Name="WCF-SQL" Capabilities="907" />
+        </SendHandler>
+      </PrimaryTransport>
+      <SecondaryTransport>
+        <Address />
+        <RetryCount>3</RetryCount>
+        <RetryInterval>5</RetryInterval>
+      </SecondaryTransport>
+      <Filter />
+      <Transforms>
+        <Transform FullName="Quillmoor.Orders.Maps.OrderToWarehouse" AssemblyQualifiedName="Quillmoor.Orders.Maps.OrderToWarehouse, Quillmoor.Orders.Maps, Version=1.4.0.0, Culture=neutral, PublicKeyToken=5a1f0c2e7b3d9e44" />
+      </Transforms>
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </SendPort>
+    <SendPort Name="SP_ArchiveFile" IsStatic="true" IsTwoWay="false" BindingOption="0">
+      <Description />
+      <TransmitPipeline Name="Quillmoor.Orders.Pipelines.ZipTransmit" FullyQualifiedName="Quillmoor.Orders.Pipelines.ZipTransmit, Quillmoor.Orders.Pipelines, Version=1.4.0.0, Culture=neutral, PublicKeyToken=5a1f0c2e7b3d9e44" Type="2" TrackingOption="None" Description="" />
+      <PrimaryTransport>
+        <Address>C:\Quillmoor\Archive\%MessageID%.zip</Address>
+        <TransportType Name="FILE" Capabilities="11" />
+        <TransportTypeData>&lt;CustomProps&gt;&lt;UseTempFileOnWrite vt="11"&gt;-1&lt;/UseTempFileOnWrite&gt;&lt;CopyMode vt="19"&gt;1&lt;/CopyMode&gt;&lt;/CustomProps&gt;</TransportTypeData>
+        <SendHandler Name="QuillmoorSend" HostTrusted="false">
+          <TransportType Name="FILE" Capabilities="11" />
+        </SendHandler>
+      </PrimaryTransport>
+      <Filter>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Filter&gt;&lt;Group&gt;&lt;Statement Property="BTS.ReceivePortName" Operator="0" Value="RP_OrderIn" /&gt;&lt;/Group&gt;&lt;/Filter&gt;</Filter>
+      <Transforms />
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </SendPort>
+    <SendPort Name="SP_PartnerFtp" IsStatic="true" IsTwoWay="false" BindingOption="0">
+      <Description />
+      <TransmitPipeline Name="Microsoft.BizTalk.DefaultPipelines.PassThruTransmit" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.PassThruTransmit, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="2" TrackingOption="None" Description="" />
+      <PrimaryTransport>
+        <Address>ftp://qm_orders:plain-text-demo@ftp.ridgeback.test/inbound/</Address>
+        <TransportType Name="FTP" Capabilities="80907" />
+        <TransportTypeData>&lt;CustomProps&gt;&lt;ServerAddress vt="8"&gt;ftp.ridgeback.test&lt;/ServerAddress&gt;&lt;UserName vt="8"&gt;qm_orders&lt;/UserName&gt;&lt;Password vt="1" /&gt;&lt;RepresentationType vt="8"&gt;binary&lt;/RepresentationType&gt;&lt;/CustomProps&gt;</TransportTypeData>
+        <SendHandler Name="QuillmoorSend" HostTrusted="false">
+          <TransportType Name="FTP" Capabilities="80907" />
+        </SendHandler>
+      </PrimaryTransport>
+      <Filter>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Filter&gt;&lt;Group&gt;&lt;Statement Property="BTS.MessageType" Operator="0" Value="urn:quillmoor:orders#ShipNotice" /&gt;&lt;Statement Property="Quillmoor.Orders.Partner" Operator="0" Value="RIDGEBACK" /&gt;&lt;/Group&gt;&lt;/Filter&gt;</Filter>
+      <Transforms>
+        <Transform FullName="Quillmoor.Orders.Maps.ShipNoticeToRidgeback" AssemblyQualifiedName="Quillmoor.Orders.Maps.ShipNoticeToRidgeback, Quillmoor.Orders.Maps, Version=1.4.0.0, Culture=neutral, PublicKeyToken=5a1f0c2e7b3d9e44" />
+      </Transforms>
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </SendPort>
+    <SendPort Name="SP_LegacyAudit" IsStatic="true" IsTwoWay="false" BindingOption="0">
+      <Description>kept from the first release</Description>
+      <TransmitPipeline Name="Microsoft.BizTalk.DefaultPipelines.PassThruTransmit" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.PassThruTransmit, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="2" TrackingOption="None" Description="" />
+      <PrimaryTransport>
+        <Address>\\qm-audit01\audit\orders\%MessageID%.xml</Address>
+        <TransportType Name="FILE" Capabilities="11" />
+        <SendHandler Name="QuillmoorSend" HostTrusted="false">
+          <TransportType Name="FILE" Capabilities="11" />
+        </SendHandler>
+      </PrimaryTransport>
+      <Filter />
+      <Transforms />
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </SendPort>
+    <SendPort Name="SP_DynamicStatus" IsStatic="false" IsTwoWay="false" BindingOption="1">
+      <Description />
+      <TransmitPipeline Name="Microsoft.BizTalk.DefaultPipelines.XMLTransmit" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.XMLTransmit, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="2" TrackingOption="None" Description="" />
+      <Filter />
+      <Transforms />
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </SendPort>
+    <SendPort Name="SP_Telex" IsStatic="true" IsTwoWay="false" BindingOption="0">
+      <Description />
+      <TransmitPipeline Name="Microsoft.BizTalk.DefaultPipelines.PassThruTransmit" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.PassThruTransmit, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="2" TrackingOption="None" Description="" />
+      <PrimaryTransport>
+        <Address>telex://qm-telex01/line4</Address>
+        <TransportType Name="Quillmoor.Telex" Capabilities="1" />
+        <SendHandler Name="QuillmoorSend" HostTrusted="false">
+          <TransportType Name="Quillmoor.Telex" Capabilities="1" />
+        </SendHandler>
+      </PrimaryTransport>
+      <Filter>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Filter&gt;&lt;Group&gt;&lt;Statement Property="BTS.MessageType" Operator="0" Value="urn:quillmoor:orders#Recall" /&gt;&lt;/Group&gt;&lt;/Filter&gt;</Filter>
+      <Transforms />
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </SendPort>
+    <SendPort Name="SP_StockService" IsStatic="true" IsTwoWay="true" BindingOption="0">
+      <Description />
+      <TransmitPipeline Name="Microsoft.BizTalk.DefaultPipelines.XMLTransmit" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.XMLTransmit, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="2" TrackingOption="None" Description="" />
+      <ReceivePipeline Name="Microsoft.BizTalk.DefaultPipelines.XMLReceive" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.XMLReceive, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="1" TrackingOption="None" Description="" />
+      <PrimaryTransport>
+        <Address>net.tcp://stock.quillmoor.test:8808/StockService</Address>
+        <TransportType Name="WCF-NetTcp" Capabilities="779" />
+        <SendHandler Name="QuillmoorSend" HostTrusted="false">
+          <TransportType Name="WCF-NetTcp" Capabilities="779" />
+        </SendHandler>
+      </PrimaryTransport>
+      <Filter>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Filter&gt;&lt;Group&gt;&lt;Statement Property="BTS.MessageType" Operator="0" Value="urn:quillmoor:orders#StockQuery" /&gt;&lt;/Group&gt;&lt;/Filter&gt;</Filter>
+      <Transforms />
+      <InboundTransforms />
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </SendPort>
+    <SendPort Name="SP_RidgebackAs2" IsStatic="true" IsTwoWay="false" BindingOption="0">
+      <Description />
+      <TransmitPipeline Name="Microsoft.BizTalk.Edi.DefaultPipelines.AS2EdiSend" FullyQualifiedName="Microsoft.BizTalk.Edi.DefaultPipelines.AS2EdiSend, Microsoft.BizTalk.Edi.EdiPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="2" TrackingOption="None" Description="" />
+      <PrimaryTransport>
+        <Address>https://as2.ridgeback.test/receive</Address>
+        <TransportType Name="HTTP" Capabilities="899" />
+        <SendHandler Name="QuillmoorSend" HostTrusted="false">
+          <TransportType Name="HTTP" Capabilities="899" />
+        </SendHandler>
+      </PrimaryTransport>
+      <Filter>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;Filter&gt;&lt;Group&gt;&lt;Statement Property="EDI.DestinationPartyName" Operator="0" Value="Ridgeback Supplies" /&gt;&lt;/Group&gt;&lt;/Filter&gt;</Filter>
+      <Transforms />
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </SendPort>
+  </SendPortCollection>
+  <DistributionListCollection />
+  <ReceivePortCollection>
+    <ReceivePort Name="RP_OrderIn" IsTwoWay="false" BindingOption="1">
+      <Description />
+      <ReceiveLocations>
+        <ReceiveLocation Name="RL_Orders_File">
+          <Description />
+          <Address>C:\Quillmoor\Drop\Orders\*.csv</Address>
+          <Primary>true</Primary>
+          <ReceivePipeline Name="Quillmoor.Orders.Pipelines.FlatFileReceive" FullyQualifiedName="Quillmoor.Orders.Pipelines.FlatFileReceive, Quillmoor.Orders.Pipelines, Version=1.4.0.0, Culture=neutral, PublicKeyToken=5a1f0c2e7b3d9e44" Type="1" TrackingOption="None" Description="" />
+          <ReceivePipelineData>&lt;Root&gt;&lt;Stages&gt;&lt;Stage CategoryId="9d0e4103-4cce-4536-83fa-4a5040674ad6"&gt;&lt;Components&gt;&lt;Component Name="Quillmoor.Components.HeaderStripper"&gt;&lt;Properties&gt;&lt;Lines vt="3"&gt;1&lt;/Lines&gt;&lt;/Properties&gt;&lt;/Component&gt;&lt;/Components&gt;&lt;/Stage&gt;&lt;Stage CategoryId="9d0e4105-4cce-4536-83fa-4a5040674ad6"&gt;&lt;Components&gt;&lt;Component Name="Microsoft.BizTalk.Component.FFDasmComp"&gt;&lt;Properties /&gt;&lt;/Component&gt;&lt;/Components&gt;&lt;/Stage&gt;&lt;/Stages&gt;&lt;/Root&gt;</ReceivePipelineData>
+          <Enable>true</Enable>
+          <ReceiveLocationTransportType Name="FILE" Capabilities="11" />
+          <ReceiveLocationTransportTypeData>&lt;CustomProps&gt;&lt;FileMask vt="8"&gt;*.csv&lt;/FileMask&gt;&lt;PollingInterval vt="19"&gt;60000&lt;/PollingInterval&gt;&lt;/CustomProps&gt;</ReceiveLocationTransportTypeData>
+          <ReceiveHandler Name="QuillmoorReceive" HostTrusted="false">
+            <TransportType Name="FILE" Capabilities="11" />
+          </ReceiveHandler>
+        </ReceiveLocation>
+        <ReceiveLocation Name="RL_Orders_File_Old">
+          <Description>the drop folder before the move to the new share</Description>
+          <Address>C:\Quillmoor\Drop\Orders\*.csv</Address>
+          <Primary>false</Primary>
+          <ReceivePipeline Name="Microsoft.BizTalk.DefaultPipelines.PassThruReceive" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.PassThruReceive, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="1" TrackingOption="None" Description="" />
+          <Enable>false</Enable>
+          <ReceiveLocationTransportType Name="FILE" Capabilities="11" />
+          <ReceiveHandler Name="QuillmoorReceive" HostTrusted="false">
+            <TransportType Name="FILE" Capabilities="11" />
+          </ReceiveHandler>
+        </ReceiveLocation>
+        <ReceiveLocation Name="RL_Orders_Ftp">
+          <Description />
+          <Address>ftp://ftp.ridgeback.test/outbound/*.xml</Address>
+          <Primary>false</Primary>
+          <ReceivePipeline Name="Microsoft.BizTalk.DefaultPipelines.XMLReceive" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.XMLReceive, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="1" TrackingOption="None" Description="" />
+          <Enable>true</Enable>
+          <ReceiveLocationTransportType Name="FTP" Capabilities="80907" />
+          <ReceiveLocationTransportTypeData>&lt;CustomProps&gt;&lt;ServerAddress vt="8"&gt;ftp.ridgeback.test&lt;/ServerAddress&gt;&lt;UserName vt="8"&gt;qm_orders&lt;/UserName&gt;&lt;Password vt="1" /&gt;&lt;PollingInterval vt="19"&gt;5&lt;/PollingInterval&gt;&lt;/CustomProps&gt;</ReceiveLocationTransportTypeData>
+          <ReceiveHandler Name="QuillmoorReceive" HostTrusted="false">
+            <TransportType Name="FTP" Capabilities="80907" />
+          </ReceiveHandler>
+        </ReceiveLocation>
+      </ReceiveLocations>
+      <Transforms>
+        <Transform FullName="Quillmoor.Orders.Maps.FlatOrderToOrder" AssemblyQualifiedName="Quillmoor.Orders.Maps.FlatOrderToOrder, Quillmoor.Orders.Maps, Version=1.4.0.0, Culture=neutral, PublicKeyToken=5a1f0c2e7b3d9e44" />
+      </Transforms>
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </ReceivePort>
+    <ReceivePort Name="RP_OrderApi" IsTwoWay="true" BindingOption="0">
+      <Description />
+      <ReceiveLocations>
+        <ReceiveLocation Name="RL_OrderApi_Soap">
+          <Description />
+          <Address>/Quillmoor.Orders/OrderService.svc</Address>
+          <Primary>true</Primary>
+          <ReceivePipeline Name="Microsoft.BizTalk.DefaultPipelines.XMLReceive" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.XMLReceive, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="1" TrackingOption="None" Description="" />
+          <SendPipeline Name="Microsoft.BizTalk.DefaultPipelines.PassThruTransmit" FullyQualifiedName="Microsoft.BizTalk.DefaultPipelines.PassThruTransmit, Microsoft.BizTalk.DefaultPipelines, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Type="2" TrackingOption="None" Description="" />
+          <Enable>true</Enable>
+          <ReceiveLocationTransportType Name="WCF-BasicHttp" Capabilities="899" />
+          <ReceiveHandler Name="QuillmoorIsolated" HostTrusted="false">
+            <TransportType Name="WCF-BasicHttp" Capabilities="899" />
+          </ReceiveHandler>
+        </ReceiveLocation>
+      </ReceiveLocations>
+      <Transforms>
+        <Transform FullName="Quillmoor.Orders.Maps.ApiOrderToOrder" AssemblyQualifiedName="Quillmoor.Orders.Maps.ApiOrderToOrder, Quillmoor.Orders.Maps, Version=1.4.0.0, Culture=neutral, PublicKeyToken=5a1f0c2e7b3d9e44" />
+      </Transforms>
+      <ApplicationName>Quillmoor.Orders</ApplicationName>
+    </ReceivePort>
+  </ReceivePortCollection>
+  <PartyCollection>
+    <Party Name="Ridgeback Supplies">
+      <Aliases>
+        <PartyAlias Name="Organization" Qualifier="OrganizationName" Value="Ridgeback Supplies" />
+        <PartyAlias Name="DUNS" Qualifier="01" Value="914736508" />
+      </Aliases>
+      <SendPorts>
+        <SendPort Name="SP_RidgebackAs2" />
+      </SendPorts>
+    </Party>
+  </PartyCollection>
+</BindingInfo>

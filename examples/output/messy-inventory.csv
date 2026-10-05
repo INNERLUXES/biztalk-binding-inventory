@@ -1,0 +1,15 @@
+kind,name,application,adapter,address,target,complexity,findings
+orchestration,Quillmoor.Orders.Processes.ApproveOrder,Quillmoor.Orders,,,Logic Apps Standard workflow,9,info orchestration
+send-port,SP_WarehouseSql,Quillmoor.Orders,WCF-SQL,mssql://wh-db01.quillmoor.test//Warehouse?,Logic Apps SQL Server connector,2,error plain-text-credential
+send-port,SP_ArchiveFile,Quillmoor.Orders,FILE,C:\Quillmoor\Archive\%MessageID%.zip,Logic Apps File System connector or Azure Blob Storage + Azure Functions (custom pipeline code),5,warning custom-pipeline
+send-port,SP_PartnerFtp,Quillmoor.Orders,FTP,ftp://qm_orders:****@ftp.ridgeback.test/inbound/,Logic Apps SFTP connector (or the FTP connector while the partner stays on FTP),4,error plain-text-credential
+send-port,SP_LegacyAudit,Quillmoor.Orders,FILE,\\qm-audit01\audit\orders\%MessageID%.xml,Logic Apps File System connector or Azure Blob Storage,1,warning orphan-send-port
+send-port,SP_DynamicStatus,Quillmoor.Orders,dynamic,,Logic Apps Standard workflow that picks the connector (the adapter is chosen at run time),3,warning dynamic-send-port
+send-port,SP_Telex,Quillmoor.Orders,Quillmoor.Telex,telex://qm-telex01/line4,no mapped target,5,warning unmapped-adapter
+send-port,SP_StockService,Quillmoor.Orders,WCF-NetTcp,net.tcp://stock.quillmoor.test:8808/StockService,API Management + Azure Functions (the service moves to HTTP),3,
+send-port,SP_RidgebackAs2,Quillmoor.Orders,HTTP,https://as2.ridgeback.test/receive,"API Management + Logic Apps or Azure Functions + Logic Apps integration account B2B (AS2, X12, EDIFACT)",5,
+receive-location,RL_Orders_File,Quillmoor.Orders,FILE,C:\Quillmoor\Drop\Orders\*.csv,Logic Apps File System connector or Azure Blob Storage + Azure Functions (custom pipeline code),7,warning custom-pipeline
+receive-location,RL_Orders_File_Old,Quillmoor.Orders,FILE,C:\Quillmoor\Drop\Orders\*.csv,Logic Apps File System connector or Azure Blob Storage,2,error duplicate-address; info disabled-receive-location
+receive-location,RL_Orders_Ftp,Quillmoor.Orders,FTP,ftp://ftp.ridgeback.test/outbound/*.xml,Logic Apps SFTP connector (or the FTP connector while the partner stays on FTP),2,
+receive-location,RL_OrderApi_Soap,Quillmoor.Orders,WCF-BasicHttp,/Quillmoor.Orders/OrderService.svc,API Management + Logic Apps or Azure Functions,3,
+party,Ridgeback Supplies,,,,Logic Apps integration account B2B (trading partner and agreements),5,

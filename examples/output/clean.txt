@@ -1,0 +1,64 @@
+biztalk-binding-inventory: examples/clean/Tamberly.Invoicing.BindingInfo.xml
+input: 1 binding file: 1 read (1 UTF-8), 0 not read
+config: built-in defaults: 22 adapters with a target; minimum severity info; fail on error
+rules: unmapped-adapter (warning); custom-pipeline (warning); orchestration (info); orphan-send-port (warning); disabled-receive-location (info); duplicate-address (error); plain-text-credential (error); dynamic-send-port (warning); invalid-artifact (error); unreadable-file (error); unparsable-file (error)
+artifacts: 3 in 1 application: 1 receive location, 2 send ports, 0 orchestrations, 0 parties; complexity 7 (3 low, 0 medium, 0 high)
+findings: 0
+
+Applications (1)
+
+  application         receive locations  send ports  orchestrations  complexity
+  Tamberly.Invoicing  1                  2           0               7
+
+Adapters (3)
+
+  adapter       artifacts  suggested target
+  FILE          1          Logic Apps File System connector or Azure Blob Storage
+  SB-Messaging  1          Azure Service Bus
+  SFTP          1          Logic Apps SFTP connector
+
+Targets (3)
+
+  suggested target                                        artifacts
+  Azure Service Bus                                       1
+  Logic Apps File System connector or Azure Blob Storage  1
+  Logic Apps SFTP connector                               1
+
+Artifacts (3)
+
+  send-port  SP_Invoices_Sftp (Tamberly.Invoicing)  examples/clean/Tamberly.Invoicing.BindingInfo.xml:10
+           adapter: SFTP
+           address: sftp://files.tamberly.test:22/invoices/%MessageID%.xml
+           pipelines: send Microsoft.BizTalk.DefaultPipelines.XMLTransmit
+           maps: Tamberly.Invoicing.Maps.InvoiceToPartner
+           filter: BTS.ReceivePortName == RP_Invoices
+           target: Logic Apps SFTP connector
+           complexity: 3 (low)
+           findings: none
+
+  send-port  SP_Invoices_Bus (Tamberly.Invoicing)  examples/clean/Tamberly.Invoicing.BindingInfo.xml:27
+           adapter: SB-Messaging
+           address: sb://tamberly-bus.servicebus.test/invoices
+           pipelines: send Microsoft.BizTalk.DefaultPipelines.PassThruTransmit
+           filter: BTS.ReceivePortName == RP_Invoices AND Tamberly.Invoicing.Region == NORTH
+           target: Azure Service Bus
+           complexity: 3 (low)
+           findings: none
+
+  receive-location  RL_Invoices_File (Tamberly.Invoicing)  examples/clean/Tamberly.Invoicing.BindingInfo.xml:48
+           adapter: FILE
+           address: D:\Tamberly\Invoices\In\*.xml
+           receive port: RP_Invoices
+           enabled: yes
+           pipelines: receive Microsoft.BizTalk.DefaultPipelines.XMLReceive
+           target: Logic Apps File System connector or Azure Blob Storage
+           complexity: 1 (low)
+           findings: none
+
+Findings (0)
+
+  none
+
+This inventory reads the binding files as they are written. It connects to no BizTalk group and no Azure service, and its targets are suggestions to review, not a migration plan and not a certification (docs/limits.md).
+
+RESULT: PASS - no finding at or above error
