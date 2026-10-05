@@ -1,0 +1,51 @@
+{
+  "name": "biztalk-binding-inventory",
+  "version": "1.0.0",
+  "description": "BizTalk to Azure migration inventory: reads BizTalk Server binding files (the XML exported for an application) and lists every receive location, send port, orchestration and party with its adapter, its address with credentials masked, its pipelines, maps and filters and a suggested Azure Integration Services target from a documented mapping table, and reports adapters with no mapped target, custom pipelines, orchestrations to redesign, orphan send ports, disabled receive locations, duplicate addresses, plain-text credentials and dynamic send ports, with counts per adapter and per target and a complexity score per artifact. A safe XML reader that refuses DTDs, text, JSON, CSV and GitHub annotation output, exit codes for a pipeline, no dependencies.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "biztalk-binding-inventory": "bin/biztalk-binding-inventory.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docs",
+    "examples",
+    "research",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage \"test/*.test.js\"",
+    "check": "node tools/check.mjs",
+    "example": "node tools/example.mjs"
+  },
+  "keywords": [
+    "biztalk",
+    "biztalk-migration",
+    "azure-integration-services",
+    "logic-apps",
+    "azure-service-bus",
+    "api-management",
+    "binding-file",
+    "integration",
+    "migration-inventory",
+    "xml",
+    "cli"
+  ],
+  "author": "INNERLUXES <info@innerluxes.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/INNERLUXES/biztalk-binding-inventory.git"
+  },
+  "homepage": "https://innerluxes.dev/application/integration/azure"
+}
